@@ -190,7 +190,20 @@ with st.sidebar:
     driver_speed = st.number_input("Driver speed", min_value=0.1, max_value=10.0, value=1.5, step=0.1)
 
     with st.expander("Hotspot settings"):
-        hotspot_ratio = st.slider("Hotspot ratio", min_value=0.0, max_value=1.0, value=0.0, step=0.05)
+        request_hotspot_ratio = st.slider(
+            "Request hotspot ratio",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.0,
+            step=0.05,
+        )
+        driver_hotspot_ratio = st.slider(
+            "Driver hotspot ratio",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.0,
+            step=0.05,
+        )
         hotspot_x = st.number_input("Hotspot center X", min_value=0.0, max_value=float(city_size), value=5.0, step=0.5)
         hotspot_y = st.number_input("Hotspot center Y", min_value=0.0, max_value=float(city_size), value=5.0, step=0.5)
 
@@ -223,7 +236,8 @@ if run_button:
                 city_size=int(city_size),
                 max_wait_time=int(max_wait_time),
                 driver_speed=float(driver_speed),
-                hotspot_ratio=float(hotspot_ratio),
+                hotspot_ratio=float(request_hotspot_ratio),
+                driver_hotspot_ratio=float(driver_hotspot_ratio),
                 hotspot_center=(float(hotspot_x), float(hotspot_y)),
             )
             output = run_simulation(params, seed)

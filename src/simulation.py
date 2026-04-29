@@ -22,6 +22,7 @@ class SimulationParams:
     driver_type_probs: Dict[str, float] = None
     request_type_probs: Dict[str, float] = None
     hotspot_ratio: float = 0.0
+    driver_hotspot_ratio: float = 0.0
     hotspot_center: Tuple[float, float] = (5.0, 5.0)
 
     def __post_init__(self) -> None:
@@ -89,8 +90,13 @@ def weighted_choice(prob_map: Dict[str, float], rng: random.Random) -> str:
     return CAR_TYPES[-1]
 
 
-def sample_location(params: SimulationParams, rng: random.Random) -> Tuple[float, float]:
-    if rng.random() < params.hotspot_ratio:
+def sample_location(
+    params: SimulationParams,
+    rng: random.Random,
+    hotspot_ratio: Optional[float] = None,
+) -> Tuple[float, float]:
+    ratio = params.hotspot_ratio if hotspot_ratio is None else hotspot_ratio
+    if rng.random() < ratio:
         center_x, center_y = params.hotspot_center
         x = min(max(center_x + rng.uniform(-1.5, 1.5), 0.0), float(params.city_size))
         y = min(max(center_y + rng.uniform(-1.5, 1.5), 0.0), float(params.city_size))
@@ -101,7 +107,7 @@ def sample_location(params: SimulationParams, rng: random.Random) -> Tuple[float
 def init_drivers(params: SimulationParams, rng: random.Random) -> List[Driver]:
     drivers: List[Driver] = []
     for idx in range(params.num_drivers):
-        x, y = sample_location(params, rng)
+        x, y = sample_location(params, rng, params.driver_hotspot_ratio)
         drivers.append(
             Driver(
                 driver_id=idx + 1,
