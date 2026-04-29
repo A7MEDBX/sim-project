@@ -16,5 +16,5 @@ Analyze experiment results and produce visual summaries for demand scenarios.
 - Utilization increased with demand, showing tighter driver capacity usage.
 
 ## Visualization Output
-- Plot status: generated
-- Plot detail: phase7_waiting_vs_demand.png, phase7_throughput_vs_demand.png, phase7_utilization_vs_demand.png
+- Plot status: not_generated
+- Plot detail: No module named 'matplotlib'

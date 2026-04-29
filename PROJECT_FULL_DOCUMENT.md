@@ -1,182 +1,102 @@
-# Ride-Sharing System Simulation
+# Ride-Sharing System Simulation - Complete Master Documentation
 
-## 1. Project Overview
-This project simulates a ride-sharing platform in a virtual city. The objective is to model and analyze system behavior under changing demand and supply, not to build a mobile app.
+## 1. Project Overview & Executive Summary
+This project simulates a dynamic ride-sharing platform in a 2D virtual city environment. The objective is to construct a rigorous mathematical and probabilistic model of ride-sharing systems, evaluating system behavior under varying constraints such as demand (arrival rates), supply (driver availability), and service capacity.
 
-The simulation includes:
-- Passenger request arrivals over time
-- Driver availability and movement
-- Matching logic between requests and drivers
-- Queueing and cancellation behavior
-- Performance metrics across scenarios
+This project was built incrementally across 9 phases:
+*   **Phases 1-3:** Mathematical formulation, probabilistic modeling, and architecture design.
+*   **Phases 4-6:** Python-based simulation engine development, boundary testing, and output aggregation.
+*   **Phases 7-9:** Graphic visualization (MATLAB & Python inline), quality assurance (QA), and final packaging.
 
-## 2. Objectives
-- Build a realistic dynamic-system model
-- Implement a working Python simulation
-- Analyze outcomes across controlled scenarios
-- Identify bottlenecks and efficiency trends
+---
 
-## 3. Scope
-Included:
-- Poisson request arrivals
-- Driver fleet with car types (economy, premium, van)
-- Nearest compatible driver matching
-- Request queue with max-wait cancellation
-- Core metrics and scenario comparison
+## 2. Mathematical Foundation & Physics Engine
 
-Excluded:
-- Traffic and road graph constraints
-- Dynamic pricing
-- AI optimization models
-- External map APIs
+The simulation is strictly governed by a mathematical engine that dictates object movement, arrival likelihoods, and performance evaluations.
 
-## 4. Core Entities
-### 4.1 Request
-Fields:
-- request_id
-- request_time
-- pickup_x, pickup_y
-- dest_x, dest_y
-- car_type
-- status (waiting, in_trip, completed, canceled)
-- match_time
-- pickup_time
-- dropoff_time
-- driver_id
+### 2.1. Spatial Physics
+The city is modeled as a Cartesian grid ($D \times D$). 
+**Distance:** The physical distance $d$ between two coordinates $(x_1,y_1)$ and $(x_2,y_2)$ is straight-line Euclidean:
+$$d = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}$$
 
-### 4.2 Driver
-Fields:
-- driver_id
-- car_type
-- x, y
-- speed
-- status (idle, busy)
-- available_time
-- busy_start_time
-- busy_time
-- current_request_id
+### 2.2. Temporal Mathematics
+Given a constant driver speed ($s$), the time it takes to travel is calculated as:
+**Pickup Travel Time:**
+$$T_{pickup} = \frac{distance(driver, pickup)}{speed}$$
 
-### 4.3 Simulation Controller
-Responsibilities:
-- Generate requests each timestep
-- Update queue and cancellations
-- Release completed drivers
-- Match waiting requests
-- Compute times and update states
-- Record outputs and aggregate metrics
+**Trip Travel Time:**
+$$T_{trip} = \frac{distance(pickup, destination)}{speed}$$
 
-## 5. Inputs
-- simulation_time: total horizon in seconds
-- num_drivers: number of drivers
-- arrival_rate_lambda: average requests per second
-- city_size: city boundaries [0, city_size]
-- max_wait_time: cancellation threshold in seconds
-- driver_speed: distance units per second
-- demand and supply type distributions
+Timeline mapping for a request:
+$$pickup\_time = match\_time + T_{pickup}$$
+$$dropoff\_time = pickup\_time + T_{trip}$$
 
-Optional demand realism:
-- hotspot_ratio
-- hotspot_center
+### 2.3. Queueing & Performance Metrics
+We measure the efficiency of the ride-sharing queue using standard operational metrics.
+**Matching Delay:**	$$D_{match} = match\_time - request\_time$$
+**Passenger Waiting Time:** $$W = pickup\_time - request\_time$$
+**Trip Duration:** $$Trip\_time = dropoff\_time - pickup\_time$$
+**Total Service Time:** $$S = T_{pickup} + T_{trip}$$
+**Service Rate:** $$\mu = \frac{1}{\mathbb{E}[S]}$$
+**System Load:** $$\rho = \frac{\lambda}{c \times \mu}$$ 
 
-## 6. Simulation Flow
-For each time t from 0 to simulation_time:
-1. Release drivers whose dropoff_time <= t
-2. Generate Poisson arrivals for requests
-3. Add requests to queue
-4. Cancel requests where t - request_time > max_wait_time
-5. Match queue requests to nearest compatible idle drivers
-6. Compute pickup/trip/dropoff times for matches
-7. Update driver and request states
-8. Record events
+**Throughput:** $$Throughput = \frac{number\_of\_completed\_requests}{simulation\_time}$$
+**Driver Utilization:** $$Utilization = \frac{total\_driver\_busy\_time}{number\_of\_drivers \times simulation\_time}$$
+**Completion Rate:** $$Completion\_rate = \frac{completed\_requests}{total\_requests}$$
+**Cancellation Rate:** $$Cancellation\_rate = \frac{canceled\_requests}{total\_requests}$$
 
-## 7. Mathematical Model
-Distance:
+### 2.4. Demand Generation (Poisson Process)
+Customer ride requests enter the system governed by a generic Poisson distribution where $\lambda$ is the expected arrival rate per time-step:
+$$ P(X=k) = \frac{\lambda^k e^{-\lambda}}{k!} $$
 
-d = sqrt((x1 - x2)^2 + (y1 - y2)^2)
+---
 
-Pickup travel time:
+## 3. Simulation Architecture
 
-T_pickup = d_driver_to_pickup / v
+### 3.1. Core Entities
+*   **Request Object:** Tracks `request_id`, coordinates (`pickup_x, pickup_y, dest_x, dest_y`), requested `car_type`, constraints, and time lifecycles (`match_time`, `pickup_time`, `dropoff_time`).
+*   **Driver Object:** Tracks `driver_id`, vehicle `car_type`, current coordinates, and exact availability scheduling (`busy_time`, `available_time`).
 
-Trip travel time:
+### 3.2. Lifecycle Loop
+For every discrete time step $t$ from $0 \rightarrow T$:
+1.  **Release:** Check all `busy` drivers. If their `available_time` $\le t$, free them to `idle`.
+2.  **Generate:** Draw $k$ from the Poisson distribution ($\lambda$). Spawn $k$ `Request` objects with randomly assigned spatial coordinates.
+3.  **Clean:** Scan the queue. If $t - request\_time > max\_wait\_time$, strictly mark the request as `canceled`.
+4.  **Match:** For each waiting request, identify all `idle` drivers where `driver.car_type == request.car_type`. Select the driver with the minimum Euclidean distance. Calculate and lock their future trajectory.
 
-T_trip = d_pickup_to_dest / v
+---
 
-Times:
+## 4. Phase 5 & 6: Validation, Quality Assurance & Aggregation
 
-pickup_time = match_time + T_pickup
+To ensure the mathematical validity of the engine, strict boundary constraints are enforced and tested:
+1.  **Zero-Demand Check ($\lambda=0$):** Validates that exactly $0$ requests are matched, canceled, or generated. 
+2.  **Over-supply Check (Drivers=120):** Confirms that cancellation rates drop to $0\%$ and matching delay is near instant.
+3.  **Overloaded System ($\lambda=3.0$, Drivers=20):** Confirms that queue limits behave correctly, enforcing high passenger wait times and high cancellation tracking.
 
-dropoff_time = pickup_time + T_trip
+For final deliverables, the system loops over $3$ distinct seeds across $\lambda \in \{0.5, 1.0, 2.0\}$ ("low", "medium", "high"), generating a `summary_metrics.csv` containing the aggregated averages.
 
-Delays:
+---
 
-matching_delay = match_time - request_time
+## 5. Phase 7: Graphical Analysis
 
-passenger_wait = pickup_time - request_time
+Data is plotted using Python's `matplotlib` (and/or MATLAB scripts) to extract hardware-agnostic behavior limits:
+*   **Waiting Time vs Demand:** Wait times predictably curve upward as $\lambda$ grows and drivers exhaust.
+*   **Throughput vs Demand:** Demonstrates system capacity constraints. Throughput eventually plateaus (bottlenecks) based on fleet limits.
+*   **Utilization vs Demand:** utilization tracks $\rho$. High demand scenarios push the driver fleet to $\sim 100\%$ operational busy-time.
 
-Service model:
+---
 
-S = T_pickup + T_trip
+## 6. How to Run the Project
 
-mu = 1 / E[S]
+You may execute the project in two distinct ways:
 
-Load:
+### Method 1: Python CLI Pipeline
+Run the modular simulation:
+```bash
+python src/simulation.py
+```
+This produces decoupled `results/requests_*.csv` datasets, `summary_metrics.csv`, outputs, and `.png` graph generations. 
 
-rho = lambda / (c * mu)
-
-## 8. Queue and Matching Policies
-Queue policy:
-- Requests stay waiting until matched or canceled
-- Cancel if waiting exceeds max_wait_time
-
-Matching policy:
-- Candidate drivers must be idle and type-compatible
-- Select the nearest candidate by Euclidean distance
-- If none available, request remains in queue
-
-## 9. Output Data
-### 9.1 Requests output
-- Request fields plus assigned times, driver_id, status
-
-### 9.2 Drivers output
-- Driver final state and accumulated busy_time
-
-### 9.3 Summary metrics
-- total_requests
-- completed_requests
-- canceled_requests
-- completion_rate
-- cancellation_rate
-- avg_matching_delay
-- avg_passenger_wait
-- avg_trip_time
-- throughput
-- utilization
-
-## 10. Experiments
-Baseline experiments:
-- Low demand scenario
-- Medium demand scenario
-- High demand scenario
-
-For each scenario:
-- Run multiple seeds
-- Compute average KPI values
-- Compare trend behavior
-
-## 11. Validation
-Sanity checks:
-- lambda = 0 should produce no waiting and no completions
-- very high driver count should reduce waiting and cancellation
-- high lambda with fixed drivers should increase waiting and utilization
-
-## 12. Expected Insights
-- Higher demand increases waiting and cancellation risk
-- Higher driver utilization indicates tighter capacity
-- Throughput rises with demand until saturation limits are reached
-
-## 13. How to Run
-1. Run the simulation script:
-   python src/simulation.py
-2. Outputs are generated in the results folder.
-3. Use produced CSV files for MATLAB plotting.
+### Method 2: Jupyter Master Notebook
+Open and run **`Ride_Sharing_Simulation.ipynb`**. 
+This single file acts as the entire autonomous monolithic pipeline. It houses the Markdown mathematical formulas, natively runs the Poisson/Euclidean engine, aggregates the metrics in-memory, visualizes the exact line charts inline, and prints the QA execution report continuously without needing external scripts.
