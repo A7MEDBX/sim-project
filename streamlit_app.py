@@ -183,8 +183,8 @@ with st.sidebar:
     mode = st.radio("Mode", ["Scenario sweep", "Single run"], horizontal=False)
 
     simulation_time = st.number_input("Simulation time", min_value=10, max_value=2000, value=100, step=10)
-    num_drivers = st.number_input("Number of drivers", min_value=1, max_value=500, value=20, step=1)
-    arrival_rate = st.number_input("Arrival rate (lambda)", min_value=0.0, max_value=10.0, value=1.0, step=0.1)
+    num_drivers = st.number_input("Number of drivers", min_value=1, max_value=5000, value=20, step=1)
+    arrival_rate = st.number_input("Arrival rate (lambda)", min_value=0.0, max_value=1000.0, value=1.0, step=0.1)
     city_size = st.number_input("City size", min_value=5, max_value=200, value=20, step=5)
     max_wait_time = st.number_input("Max wait time", min_value=1, max_value=200, value=20, step=1)
     driver_speed = st.number_input("Driver speed", min_value=0.1, max_value=10.0, value=1.5, step=0.1)
