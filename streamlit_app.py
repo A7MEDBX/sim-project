@@ -414,8 +414,8 @@ if "summary_rows" in st.session_state:
 
         st.markdown(
             "**Scenario comparison**\n"
-            f"- Low demand wait: {wait_low:.2f}\n"
-            f"- High demand wait: {wait_high:.2f}\n"
+            f"- High demand wait: {wait_low:.2f}\n"
+            f"- Low demand wait: {wait_high:.2f}\n"
             f"- High demand utilization: {util_high:.2%}\n"
             f"- Throughput growth (low to high): {throughput_growth:.1%}"
         )
